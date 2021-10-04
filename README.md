@@ -123,7 +123,7 @@ As follows from the example, what happened here is similar to running the follow
 #!/bin/bash
 
 cat << EOF > params1.json
-{p1: 3}
+{"p1": 3}
 EOF
 cat << EOF > context1.json
 {}
@@ -132,7 +132,7 @@ EOF
 python test_python.py params1.json context1.json results1.json
 
 cat << EOF > params2.json
-{p1: 3}
+{"p1": 3}
 EOF
 
 cp context1.json context2.json
