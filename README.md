@@ -117,3 +117,28 @@ if __name__ == "__main__":
 ```
 
 Saving the second file as `test_python.py` and the first as `run_python.py` in the same directory, we can run the chain as `python run_python.py`, which should show you the expected outputs.
+
+As follows from the example, what happened here is similar to running the following bash script:
+```bash
+#!/bin/bash
+
+cat << EOF > params1.json
+{p1: 3}
+EOF
+cat << EOF > context1.json
+{}
+EOF
+
+python test_python.py params1.json context1.json results1.json
+
+cat << EOF > params2.json
+{p1: 3}
+EOF
+
+cp context1.json context2.json
+
+python test_python.py params2.json context2.json results2.json
+
+cat results1.json
+cat results2.json
+```
