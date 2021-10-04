@@ -1,0 +1,27 @@
+{
+    "name": "aiida_basic",
+    "author": "Louis Ponet",
+    "author_email": "louisponet@gmail.com",
+    "description": "",
+    "license": "GPLv3",
+    "classifiers": [
+        "Programming Language :: Python",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Natural Language :: English",
+        "Framework :: AiiDA"
+    ],
+    "version": "0.0.0",
+    "entry_points": {
+        "aiida.calculations": [
+            "basic.script = aiida_basic.calculations.script:Script"
+        ],
+        "aiida.workflows": [
+            "basic.script = aiida_basic.workflows.script_chain:ScriptChain"
+        ]
+    },
+    "setup_requires": ["reentry"],
+    "install_requires": [
+        "aiida-core>=1.0.0,<2.0.0"
+    ]
+}
