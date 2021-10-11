@@ -1,7 +1,9 @@
 
 from aiida.orm import Dict, SinglefileData, Str
-from aiida.engine import WorkChain, ToContext, while_
+from aiida.engine import WorkChain, ToContext, while_, calcfunction
 from aiida.plugins import CalculationFactory
+
+import ast
 
 class CalcJobChain(WorkChain):
 
@@ -10,6 +12,8 @@ class CalcJobChain(WorkChain):
         super().define(spec)
         spec.input_namespace('calcjobs', dynamic=True, valid_type=Str)
         spec.input_namespace('inputs', dynamic=True)
+        spec.input_namespace('preprocess', dynamic=True, required=False,valid_type=Str)
+        spec.input_namespace('postprocess', dynamic=True, required=False, valid_type=Str)
         spec.inputs.validator = cls.check_inputs
 
         spec.outline(
@@ -42,17 +46,30 @@ class CalcJobChain(WorkChain):
         return self.ctx.current_id < len(self.inputs['calcjobs']) 
 
     def submit_next(self):
-        id = self.ctx.current_id
-        inputs = self.inputs['inputs'][f'{id}']
-        cjob = CalculationFactory(self.inputs['calcjobs'][f'{id}'].value)
+        id     = self.ctx.current_id
+        k      = f'{id}'
+        inputs = self.inputs['inputs'][k]
+        cjob   = CalculationFactory(self.inputs['calcjobs'][k].value)
+
+        if 'preprocess' in self.inputs:
+            if k in self.inputs['preprocess']:
+                exec(self.inputs['preprocess'][k].value)
+
         return ToContext(current_cjob = self.submit(cjob, **inputs))
         
 
     def process_current(self):
-        self.ctx.results[f'{self.ctx.current_id}'] = dict()
-        for k in self.ctx.current_cjob.outputs:
-            self.ctx.results[f'{self.ctx.current_id}'][k] = self.ctx.current_cjob.outputs[k]
+        results = dict()
+        outputs = self.ctx.current_cjob.outputs
+        for k in outputs:
+            results[k] = self.ctx.current_cjob.outputs[k]
 
+        k = f'{self.ctx.current_id}'
+        if 'postprocess' in self.inputs:
+            if k in self.inputs['postprocess']:
+                exec(self.inputs['postprocess'][k].value)
+
+        self.ctx.results[k] = results
         self.ctx.current_id += 1
 
     def finalize(self):
