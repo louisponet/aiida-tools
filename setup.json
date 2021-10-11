@@ -17,7 +17,8 @@
             "basic.script = aiida_basic.calculations.script:Script"
         ],
         "aiida.workflows": [
-            "basic.script = aiida_basic.workflows.script_chain:ScriptChain"
+            "basic.script = aiida_basic.workflows.script_chain:ScriptChain",
+            "basic.calcjob = aiida_basic.workflows.calcjob_chain:CalcJobChain"
         ]
     },
     "setup_requires": ["reentry"],
