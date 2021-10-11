@@ -55,14 +55,14 @@ class CalcJobChain(WorkChain):
             if k in self.inputs['preprocess']:
                 exec(self.inputs['preprocess'][k].value)
 
-        return ToContext(current_cjob = self.submit(cjob, **inputs))
+        return ToContext(current = self.submit(cjob, **inputs))
         
 
     def process_current(self):
         results = dict()
-        outputs = self.ctx.current_cjob.outputs
+        outputs = self.ctx.current.outputs
         for k in outputs:
-            results[k] = self.ctx.current_cjob.outputs[k]
+            results[k] = self.ctx.current.outputs[k]
 
         k = f'{self.ctx.current_id}'
         if 'postprocess' in self.inputs:
