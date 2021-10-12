@@ -18,11 +18,13 @@
         ],
         "aiida.workflows": [
             "basic.script = aiida_basic.workflows.script_chain:ScriptChain",
-            "basic.calcjob = aiida_basic.workflows.calcjob_chain:CalcJobChain"
+            "basic.calcjob = aiida_basic.workflows.calcjob_chain:CalcJobChain",
+            "basic.declarative = aiida_basic.workflows.declarative_chain:DeclarativeChain"
         ]
     },
     "setup_requires": ["reentry"],
     "install_requires": [
-        "aiida-core>=1.0.0,<2.0.0"
+        "aiida-core>=1.0.0,<2.0.0",
+        "jsonschema"
     ]
 }

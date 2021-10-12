@@ -1,0 +1,43 @@
+{
+	"steps": [{
+		"calcjob": "quantumespresso.pw",
+		"inputs": {
+			"code": 656,
+			"structure": 712,
+			"pseudos": {
+				"Ba": 571,
+				"Ti": 612,
+				"O": 617
+			},
+			"kpoints": 711,
+			"parameters": 713,
+			"metadata": {
+		        "options": {
+		            "withmpi": false,
+		            "resources": {
+		                "num_machines": 1,
+		                "num_mpiprocs_per_machine": 14
+		            }
+		        }
+		    }
+		}
+	},
+	{
+		"calcjob": "quantumespresso.projwfc",
+		"inputs": {
+			"code": 668,
+			"parameters": 714,
+			"metadata": {
+		        "options": {
+		            "withmpi": false,
+		            "resources": {
+		                "num_machines": 1,
+		                "num_mpiprocs_per_machine": 14
+		            }
+		        }
+		    }
+		},
+		"preprocess": "inputs['parent_folder'] = self.ctx.current.outputs['retrieved']"
+	}
+	]
+}

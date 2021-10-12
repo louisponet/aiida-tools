@@ -3,8 +3,6 @@ from aiida.orm import Dict, SinglefileData, Str
 from aiida.engine import WorkChain, ToContext, while_, calcfunction
 from aiida.plugins import CalculationFactory
 
-import ast
-
 class CalcJobChain(WorkChain):
 
     @classmethod
