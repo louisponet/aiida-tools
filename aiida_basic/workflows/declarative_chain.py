@@ -7,6 +7,7 @@ import json
 import sys
 import plumpy
 import aiida_pseudo
+import jsonref
 
 
 schema = {
@@ -42,7 +43,7 @@ schema = {
                 },
                 "metadata": {
                     "type": "object"
-                }
+                },
             },
             "additionalProperties": False,
             "required": ["calcjob", "inputs", "metadata"],
@@ -213,9 +214,7 @@ class DeclarativeChain(WorkChain):
         self.ctx.results = dict()
 
         with self.inputs['workchain_specification'].open(mode="r") as f:
-            spec = json.load(f)
-
-        validate(instance=spec, schema=schema)
+            spec = jsonref.load(f, jsonschema=schema)
 
         self.ctx.steps = spec['steps']
 
@@ -227,10 +226,10 @@ class DeclarativeChain(WorkChain):
         step = self.ctx.steps[id]
         # This needs to happen because no dict 2 node for now.
         inputs = dict()
-        inputs['metadata'] = step['metadata']
 
         cjob = CalculationFactory(step['calcjob'])
         spec_inputs = cjob.spec().inputs
+        inputs['metadata'] = step['metadata'] 
         for k in step['inputs']:
             if k not in spec_inputs:
                 return f"ERROR: In: {step['calcjob']}\n\t{k} is not a valid input."
