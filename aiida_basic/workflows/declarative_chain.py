@@ -1,8 +1,13 @@
-from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group
+from aiida import orm
+from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float
 from aiida.engine import WorkChain, ToContext, while_, calcfunction
 from aiida.plugins import CalculationFactory, DataFactory
 from jsonschema import validate
 import json
+import sys
+import plumpy
+import aiida_pseudo
+
 
 schema = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -122,72 +127,68 @@ upfschema = {
 
 
 def dict2structure(d):
-    typ = d['type']
-    val = d['value']
-    if typ == "dict":
-        validate(instance=val, schema=structschema)
-        structure = DataFactory('structure')(cell=val['cell'])
-        for a in val['atoms']:
-            structure.append_atom(**a)
-        return structure
-    elif typ == "node":
-        return load_node(val)
+    validate(instance=d, schema=structschema)
+    structure = DataFactory('structure')(cell=d['cell'])
+    for a in d['atoms']:
+        structure.append_atom(**a)
+    return structure
 
 
 def dict2code(d):
-    typ = d['type']
-    val = d['value']
-    if typ == 'string':
-        return load_code(val)
-    elif typ == 'node':
-        return load_node(val)
+    return load_code(d)
 
 
 def dict2upf(d):
-    typ = d['type']
-    val = d['value']
+    validate(instance=d, schema=upfschema)
+    group = load_group(d['group'])
+    return group.get_pseudo(element=d['element'])
 
-    if typ == 'dict':
-        validate(instance=val, schema=upfschema)
-        group = load_group(val['group'])
-        return group.get_pseudo(element=val['element'])
-    elif typ == 'node':
-        return load_node(val)
+
+#TODO: implement for old upfs?
+def dict2upf_deprecated(d):
+    return None
 
 
 def dict2kpoints(d):
-    typ = d['type']
-    val = d['value']
-
     kpoints = DataFactory("array.kpoints")()
-    if typ == 'array':
-        kpoints.set_kpoints_mesh(val)
-        return kpoints
-    elif typ == 'node':
-        return load_node(val)
+    kpoints.set_kpoints_mesh(d)
+    return kpoints
 
 
-def dict2datanode(d):
-    typ = d['type']
-    dat = d['data']
-
-    if typ == 'Code':
-        return dict2code(dat)
-    elif typ == 'Structure':
-        return dict2structure(dat)
-    elif typ == 'UpfData':
-        return dict2upf(dat)
-    elif typ == 'KpointsData':
-        return dict2kpoints(dat)
-    elif typ == 'Dict':
-        return Dict(dict=dat)
-
-    elif typ == 'dict':
+def dict2datanode(dat, typ, dynamic):
+    # Resolve recursively
+    if dynamic:
         out = dict()
         for k in dat:
-            out[k] = dict2datanode(dat[k])
-
+            # Is there only 1 level of dynamisism?
+            out[k] = dict2datanode(dat[k], typ, False)
         return out
+
+    # If node is specified, just load node
+    if dat is dict and "node" in dat:
+        return load_node(dat["node"])
+
+    # More than one typ possible
+    if isinstance(typ, tuple):
+        for t in typ:
+            try:
+                return dict2datanode(dat, t, dynamic)
+            except:
+                None
+
+    # Else resolve DataNode from value
+    if typ is orm.Code:
+        return dict2code(dat)
+    elif typ is orm.StructureData:
+        return dict2structure(dat)
+    elif typ is aiida_pseudo.data.pseudo.upf.UpfData:
+        return dict2upf(dat)
+    elif typ is orm.KpointsData:
+        return dict2kpoints(dat)
+    elif typ is Dict or typ is None:
+        return Dict(dict=dat)
+    else:
+        return typ(dat)
 
 
 class DeclarativeChain(WorkChain):
@@ -227,10 +228,15 @@ class DeclarativeChain(WorkChain):
         # This needs to happen because no dict 2 node for now.
         inputs = dict()
         inputs['metadata'] = step['metadata']
-        for k in step['inputs']:
-            inputs[k] = dict2datanode(step['inputs'][k])
 
         cjob = CalculationFactory(step['calcjob'])
+        spec_inputs = cjob.spec().inputs
+        for k in step['inputs']:
+            if k not in spec_inputs:
+                return f"ERROR: In: {step['calcjob']}\n\t{k} is not a valid input."
+
+            i = spec_inputs.get(k)
+            inputs[k] = dict2datanode(step['inputs'][k], i.valid_type, isinstance(i, plumpy.PortNamespace))
 
         if 'preprocess' in step:
             exec(step['preprocess'])
