@@ -6,7 +6,7 @@ from aiida_basic.workflows.declarative_chain import DeclarativeChain
 import os
 
 all = {
-    'workchain_specification': orm.SinglefileData(os.path.splitdir(os.getcwd() + __file__)[0] +"/workflow.json")
+    'workchain_specification': orm.SinglefileData(os.path.abspath(getcwd() +"/workflow.json"))
 }
 
 engine.run(DeclarativeChain, **all)
