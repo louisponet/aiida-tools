@@ -1,29 +1,28 @@
+from aiida.orm.nodes.data.upf import get_pseudos_from_structure
+from aiida.plugins import DataFactory
+from aiida_basic.workflows.calcjob_chain import CalcJobChain
+from aiida_basic.workflows.script_chain import ScriptChain
+from aiida.orm import Str, Dict, SinglefileData
+from aiida import orm, engine
 import aiida
 aiida.load_profile()
 
-from aiida import orm, engine
-from aiida.orm import Str, Dict, SinglefileData
-from aiida_basic.workflows.script_chain import ScriptChain
-from aiida_basic.workflows.calcjob_chain import CalcJobChain
-
-from aiida.plugins import DataFactory
-from aiida.orm.nodes.data.upf import get_pseudos_from_structure
 
 StructureData = DataFactory('structure')
 
-alat = 4. # angstrom
-cell = [[alat, 0., 0.,],
-        [0., alat, 0.,],
-        [0., 0., alat,],
-       ]
+alat = 4.  # angstrom
+cell = [[alat, 0., 0., ],
+        [0., alat, 0., ],
+        [0., 0., alat, ],
+        ]
 
 # BaTiO3 cubic structure
 s = StructureData(cell=cell)
-s.append_atom(position=(0.,0.,0.),symbols='Ba')
-s.append_atom(position=(alat/2.,alat/2.,alat/2.),symbols='Ti')
-s.append_atom(position=(alat/2.,alat/2.,0.),symbols='O')
-s.append_atom(position=(alat/2.,0.,alat/2.),symbols='O')
-s.append_atom(position=(0.,alat/2.,alat/2.),symbols='O')
+s.append_atom(position=(0., 0., 0.), symbols='Ba')
+s.append_atom(position=(alat/2., alat/2., alat/2.), symbols='Ti')
+s.append_atom(position=(alat/2., alat/2., 0.), symbols='O')
+s.append_atom(position=(alat/2., 0., alat/2.), symbols='O')
+s.append_atom(position=(0., alat/2., alat/2.), symbols='O')
 
 parameters = Dict(dict={
     'CONTROL': {
@@ -42,14 +41,14 @@ parameters = Dict(dict={
 
 parameters_projwfc = Dict(dict={
     'PROJWFC': {
-        'DeltaE' : 0.2,
-        'ngauss' : 1,
-        'degauss' : 0.02
+        'DeltaE': 0.2,
+        'ngauss': 1,
+        'degauss': 0.02
     }})
 
 KpointsData = DataFactory('array.kpoints')
 kpoints = KpointsData()
-kpoints.set_kpoints_mesh([4,4,4])
+kpoints.set_kpoints_mesh([4, 4, 4])
 
 family = orm.load_group('SSSP/1.1/PBE/efficiency')
 pseudos = family.get_pseudos(structure=s)
@@ -75,7 +74,8 @@ metadata = {
     }
 }
 
-preprocess = {'1': Str("inputs['parent_folder'] = self.ctx.current.outputs['retrieved']")}
+preprocess = {
+    '1': Str("inputs['parent_folder'] = self.ctx.current.outputs['retrieved']")}
 
 inputs = {
     '0': {'code': code,
