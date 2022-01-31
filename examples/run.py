@@ -1,8 +1,8 @@
 import aiida
 from aiida import orm, engine
 from aiida.orm import Str, Dict, SinglefileData
-from aiida_basic.workflows.script_chain import ScriptChain
-from aiida_basic.workflows.calcjob_chain import CalcJobChain
+from aiida_tools.workflows.script_chain import ScriptChain
+from aiida_tools.workflows.calcjob_chain import CalcJobChain
 aiida.load_profile()
 # Setting up inputs
 code = orm.load_code('python@localhost')

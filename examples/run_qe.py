@@ -1,7 +1,7 @@
 from aiida.orm.nodes.data.upf import get_pseudos_from_structure
 from aiida.plugins import DataFactory
-from aiida_basic.workflows.calcjob_chain import CalcJobChain
-from aiida_basic.workflows.script_chain import ScriptChain
+from aiida_tools.workflows.calcjob_chain import CalcJobChain
+from aiida_tools.workflows.script_chain import ScriptChain
 from aiida.orm import Str, Dict, SinglefileData
 from aiida import orm, engine
 import aiida

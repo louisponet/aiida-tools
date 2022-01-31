@@ -1,5 +1,5 @@
 {
-    "name": "aiida_basic",
+    "name": "aiida_tools",
     "author": "Louis Ponet",
     "author_email": "louisponet@gmail.com",
     "description": "",
@@ -14,12 +14,12 @@
     "version": "0.0.0",
     "entry_points": {
         "aiida.calculations": [
-            "basic.script = aiida_basic.calculations.script:Script"
+            "basic.script = aiida_tools.calculations.script:Script"
         ],
         "aiida.workflows": [
-            "basic.script = aiida_basic.workflows.script_chain:ScriptChain",
-            "basic.calcjob = aiida_basic.workflows.calcjob_chain:CalcJobChain",
-            "basic.declarative = aiida_basic.workflows.declarative_chain:DeclarativeChain"
+            "basic.script = aiida_tools.workflows.script_chain:ScriptChain",
+            "basic.calcjob = aiida_tools.workflows.calcjob_chain:CalcJobChain",
+            "basic.declarative = aiida_tools.workflows.declarative_chain:DeclarativeChain"
         ]
     },
     "setup_requires": ["reentry"],

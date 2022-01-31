@@ -1,13 +1,14 @@
-# aiida-basic
+# aiida-tools
 
-A collection of basic building blocks to be used with AiiDA.
+A collection of building blocks to extend the functionality of AiiDA.
+These are mostly for my own personal use.
 
 
 ## Installation
 Since this plugin is not yet registered, use the following commands to install:
 ```
-git clone https://github.com/louisponet/aiida-basic
-cd aiida-basic
+git clone https://github.com/louisponet/aiida-tools
+cd aiida-tools
 pip install ./
 reentry scan
 ```
@@ -30,7 +31,7 @@ Submission:
 import aiida
 from aiida import orm, engine
 from aiida.orm import SinglefileData, Dict
-from aiida_basic.workflows.script_chain import ScriptChain
+from aiida_tools.workflows.script_chain import ScriptChain
 aiida.load_profile()
 # Setting up inputs
 code = orm.load_code('python@localhost')

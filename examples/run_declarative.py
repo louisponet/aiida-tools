@@ -2,7 +2,7 @@ import aiida
 aiida.load_profile()
 from aiida import orm
 from aiida import engine
-from aiida_basic.workflows.declarative_chain import DeclarativeChain
+from aiida_tools.workflows.declarative_chain import DeclarativeChain
 import os
 
 all = {
