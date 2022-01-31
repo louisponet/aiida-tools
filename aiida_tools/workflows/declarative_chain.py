@@ -10,7 +10,8 @@ import plumpy
 from aiida_pseudo.data.pseudo.upf import UpfData
 import jsonref
 from os.path import splitext
-import yaml
+from ruamel.yaml import YAML
+from ..utils import JsonYamlLoader
 
 # from jinja2.nativetypes import NativeEnvironment
 
@@ -246,11 +247,12 @@ class DeclarativeChain(WorkChain):
         ext = splitext(self.inputs['workchain_specification'].filename)[1]
         with self.inputs['workchain_specification'].open(mode="r") as f:
             if ext == ".yaml":
-                spec = jsonref.JsonRef.replace_refs(yaml.load(f))
-                validate(instance=spec, schema=schema)
+                tspec = YAML(typ="safe").load(f)
             else:
-                spec = jsonref.load(f, jsonschema=schema)
+                spec = jsonref.load(f)
 
+        spec = jsonref.JsonRef.replace_refs(tspec, loader = JsonYamlLoader())
+        validate(instance=spec, schema=schema)
         self.ctx.steps = spec['steps']
 
     def not_finished(self):
