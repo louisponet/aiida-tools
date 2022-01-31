@@ -1,15 +1,18 @@
 from aiida import orm
-from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float
-from aiida.engine import WorkChain, ToContext, while_, calcfunction
+from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float, List
+from aiida.engine import WorkChain, ToContext, while_, calcfunction, run_get_node
 from aiida.plugins import CalculationFactory, DataFactory
+from aiida.engine.utils import is_process_function
 from jsonschema import validate
 import json
 import sys
 import plumpy
-import aiida_pseudo
+from aiida_pseudo.data.pseudo.upf import UpfData
 import jsonref
 
+# from jinja2.nativetypes import NativeEnvironment
 
+# TODO: extend schema to include also the postprocess and preprocess objects
 schema = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
@@ -36,17 +39,19 @@ schema = {
                     "type": "object"
                 },
                 "preprocess": {
-                    "type": "string"
+                    "type": "object"
                 },
                 "postprocess": {
-                    "type": "string"
+                    "type": "object"
                 },
                 "metadata": {
                     "type": "object"
                 },
+                "node": {
+                    "type": "integer"
+                }
             },
             "additionalProperties": False,
-            "required": ["calcjob", "inputs", "metadata"],
             "title": "Step"
         }
     }
@@ -129,7 +134,7 @@ upfschema = {
 
 def dict2structure(d):
     validate(instance=d, schema=structschema)
-    structure = DataFactory('structure')(cell=d['cell'])
+    structure = DataFactory('core.structure')(cell=d['cell'])
     for a in d['atoms']:
         structure.append_atom(**a)
     return structure
@@ -151,12 +156,15 @@ def dict2upf_deprecated(d):
 
 
 def dict2kpoints(d):
-    kpoints = DataFactory("array.kpoints")()
-    kpoints.set_kpoints_mesh(d)
+    kpoints = DataFactory("core.array.kpoints")()
+    if isinstance(d[0], list):
+        kpoints.set_kpoints(d)
+    else:
+        kpoints.set_kpoints_mesh(d)
     return kpoints
 
 
-def dict2datanode(dat, typ, dynamic):
+def dict2datanode(dat, typ, dynamic=False):
     # Resolve recursively
     if dynamic:
         out = dict()
@@ -182,14 +190,38 @@ def dict2datanode(dat, typ, dynamic):
         return dict2code(dat)
     elif typ is orm.StructureData:
         return dict2structure(dat)
-    elif typ is aiida_pseudo.data.pseudo.upf.UpfData:
+    elif typ is UpfData:
         return dict2upf(dat)
     elif typ is orm.KpointsData:
         return dict2kpoints(dat)
-    elif typ is Dict or typ is None:
+    elif typ is Dict:
         return Dict(dict=dat)
+    elif typ is List:
+        return List(list=dat)
     else:
         return typ(dat)
+
+
+def get_dot2index(d, key):
+    if isinstance(key, str):
+        return get_dot2index(d, key.split('.'))
+    elif len(key) == 1:
+        return d[key[0]]
+    else:
+        return get_dot2index(d[key[0]], key[1:])
+
+
+def set_dot2index(d, key, val):
+    if isinstance(key, str):
+        return set_dot2index(d, key.split('.'), val)
+    elif len(key) == 1:
+        d[key[0]] = val
+    else:
+        t = key[0]
+        if t not in d.keys():
+            d[t] = dict()
+
+        return set_dot2index(d[t], key[1:], val)
 
 
 class DeclarativeChain(WorkChain):
@@ -224,24 +256,54 @@ class DeclarativeChain(WorkChain):
     def submit_next(self):
         id = self.ctx.current_id
         step = self.ctx.steps[id]
-        # This needs to happen because no dict 2 node for now.
-        inputs = dict()
+        if "node" in step:
+            self.ctx.current = load_node(step['node'])
 
-        cjob = CalculationFactory(step['calcjob'])
-        spec_inputs = cjob.spec().inputs
-        inputs['metadata'] = step['metadata'] 
-        for k in step['inputs']:
-            if k not in spec_inputs:
-                return f"ERROR: In: {step['calcjob']}\n\t{k} is not a valid input."
+        elif "calcjob" in step:
+            # This needs to happen because no dict 2 node for now.
+            inputs = dict()
 
-            i = spec_inputs.get(k)
-            inputs[k] = dict2datanode(step['inputs'][k], i.valid_type, isinstance(i, plumpy.PortNamespace))
+            cjob = CalculationFactory(step['calcjob'])
+            spec_inputs = cjob.spec().inputs
+            for k in step['inputs']:
+                valid_type = None
+                if k in spec_inputs:
+                    i = spec_inputs.get(k)
+                    valid_type = i.valid_type
 
-        if 'preprocess' in step:
-            exec(step['preprocess'])
+                d = step['inputs'][k]
+                if 'type' in d:
+                    valid_type = DataFactory(d.pop('type'))
+                if 'value' in d:
+                    val = d['value']
+                elif 'from_context' in d:
+                    val = get_dot2index(self.ctx, d['from_context'])
+                elif 'link' in d:
+                    link = d['link']
+                    if 'step' in link:
+                        val = get_dot2index(self.ctx.results[f"{link['step']}"], link['output'])
+                    else:
+                        val = get_dot2index(self.ctx.current.outputs, link)
+                # elif 'jinja' in d:
+                #     env = NativeEnvironment()
+                #     t = env.from_string(d['jinja'])
 
-        return ToContext(current=self.submit(cjob, **inputs))
+                else:
+                    val = d
 
+                if valid_type is not None and not isinstance(val, valid_type):
+                    if k in spec_inputs:
+                        val = dict2datanode(val, valid_type, isinstance(i, plumpy.PortNamespace))
+                    else:
+                        val = dict2datanode(val, valid_type)
+
+                set_dot2index(inputs, k, val)
+
+            if is_process_function(cjob):
+                return ToContext(current = run_get_node(cjob, **inputs)[1])
+            else:
+                return ToContext(current=self.submit(cjob, **inputs))
+            
     def process_current(self):
         results = dict()
         outputs = self.ctx.current.outputs
@@ -249,8 +311,18 @@ class DeclarativeChain(WorkChain):
             results[k] = self.ctx.current.outputs[k]
 
         step = self.ctx.steps[self.ctx.current_id]
-        if 'postprocess' in step:
-            exec(step['preprocess'])
+        if "postprocess" in step:
+            for work in step["postprocess"]:
+                if "to_context" in work:
+                    to_context = work["to_context"]
+                    if "value" in to_context:
+                        val = to_context["value"]
+                    elif "output" in to_context:
+                        val = get_dot2index(self.ctx.current.outputs, to_context["output"])
+                    elif "attribute" in to_context:
+                        val = get_dot2index(self.ctx.current.attributes, to_context["attribute"])
+
+                    set_dot2index(self.ctx, to_context["name"], val)
 
         self.ctx.results[f'{self.ctx.current_id}'] = results
         self.ctx.current_id += 1

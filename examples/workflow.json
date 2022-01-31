@@ -2,105 +2,431 @@
 	"data": {
 		"structure": {
 			"atoms": [{
-				"symbols": "Ba",
+				"symbols": "Ni",
 				"position": [0.0, 0.0, 0.0]
 			},
 			{
-				"symbols": "Ti",
-				"position": [2.0, 2.0, 2.0]
+				"symbols": "Ni",
+				"name": "Ni1",
+				"position": [4.17, 4.17, 4.17]
 			},
 			{
 				"symbols": "O",
-				"position": [2.0, 2.0, 0.0]
+				"position": [2.0866, 2.0866, 2.0866]
 			},
 			{
 				"symbols": "O",
-				"position": [2.0, 0.0, 2.0]
-			},
-			{
-				"symbols": "O",
-				"position": [0.0, 2.0, 2.0]
+				"position": [6.26, 6.26, 6.26]
 			}],
-			"cell": [[4.0, 0.0, 0.0],
-				     [0.0, 4.0, 0.0],
-				     [0.0,0.0, 4.0]]
+			"cell": [[4.17737, 2.08464, 2.08464],
+				     [2.08464, 4.17737, 2.08464],
+				     [2.08464,2.08464, 4.17737]]
 		},
 		"pseudos": {
-			"Ba": {
+			"Ni": {
 				"group": "SSSP/1.1/PBE/efficiency",
-				"element": "Ba"
+				"element": "Ni"
 			},
-			"Ti": {
+			"Ni1": {
 				"group": "SSSP/1.1/PBE/efficiency",
-				"element": "Ti"
+				"element": "Ni"
 			},
 			"O": {
 				"group": "SSSP/1.1/PBE/efficiency",
 				"element": "O"
 			}
 		},
+		"pw_parameters": {
+			"CONTROL": {
+			     "tstress": true,
+			     "verbosity": "high",
+			     "tprnfor": true,
+			     "wf_collect": true,
+			     "restart_mode": "from_scratch"
+			},
+			"SYSTEM": {
+			    "Hubbard_U(1)": 6.0112,
+			    "Hubbard_U(2)": 5.9713,
+			    "starting_magnetization(1)": -0.1,
+			    "starting_magnetization(2)": 0.1,
+			    "ecutwfc": 45.0,
+			    "occupations": "fixed",
+			    "nspin": 2,
+			    "nbnd": 26,
+			    "lda_plus_u": true,
+			    "tot_magnetization": 0.0
+			},
+			"ELECTRONS":{
+				"electron_maxstep": 10000,
+				"conv_thr": 1.0e-8
+			}
+		},
 		"metadata": {
 	        "options": {
-	            "withmpi": false,
+	            "withmpi": true,
 	            "resources": {
 	                "num_machines": 1,
 	                "num_mpiprocs_per_machine": 14
 	            }
 	        }
 		},
-		"pw_parameters": {
-		    "CONTROL": {
-		        "calculation": "scf",
-		        "restart_mode": "from_scratch",
-		        "wf_collect": true
-		    },
-		    "SYSTEM": {
-		        "ecutwfc": 30.0,
-		        "ecutrho": 240.0
-		    },
-		    "ELECTRONS": {
-		        "conv_thr": 1.0e-6
-		    }
+		"kpoints_mesh": [[0.0, 0.0, 0.0, 0.037037037037037035],
+                        [0.3333333333333333, 0.0, 0.0, 0.037037037037037035],
+                        [0.6666666666666666, 0.0, 0.0, 0.037037037037037035],
+                        [0.0, 0.3333333333333333, 0.0, 0.037037037037037035],
+                        [0.3333333333333333, 0.3333333333333333, 0.0, 0.037037037037037035],
+                        [0.6666666666666666, 0.3333333333333333, 0.0, 0.037037037037037035],
+                        [0.0, 0.6666666666666666, 0.0, 0.037037037037037035],
+                        [0.3333333333333333, 0.6666666666666666, 0.0, 0.037037037037037035],
+                        [0.6666666666666666, 0.6666666666666666, 0.0, 0.037037037037037035],
+                        [0.0, 0.0, 0.3333333333333333, 0.037037037037037035],
+                        [0.3333333333333333, 0.0, 0.3333333333333333, 0.037037037037037035],
+                        [0.6666666666666666, 0.0, 0.3333333333333333, 0.037037037037037035],
+                        [0.0, 0.3333333333333333, 0.3333333333333333, 0.037037037037037035],
+                        [0.3333333333333333, 0.3333333333333333, 0.3333333333333333, 0.037037037037037035],
+                        [0.6666666666666666, 0.3333333333333333, 0.3333333333333333, 0.037037037037037035],
+                        [0.0, 0.6666666666666666, 0.3333333333333333, 0.037037037037037035],
+                        [0.3333333333333333, 0.6666666666666666, 0.3333333333333333, 0.037037037037037035],
+                        [0.6666666666666666, 0.6666666666666666, 0.3333333333333333, 0.037037037037037035],
+                        [0.0, 0.0, 0.6666666666666666, 0.037037037037037035],
+                        [0.3333333333333333, 0.0, 0.6666666666666666, 0.037037037037037035],
+                        [0.6666666666666666, 0.0, 0.6666666666666666, 0.037037037037037035],
+                        [0.0, 0.3333333333333333, 0.6666666666666666, 0.037037037037037035],
+                        [0.3333333333333333, 0.3333333333333333, 0.6666666666666666, 0.037037037037037035],
+                        [0.6666666666666666, 0.3333333333333333, 0.6666666666666666, 0.037037037037037035],
+                        [0.0, 0.6666666666666666, 0.6666666666666666, 0.037037037037037035],
+                        [0.3333333333333333, 0.6666666666666666, 0.6666666666666666, 0.037037037037037035],
+                        [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.037037037037037035]],
+		"projections": [{
+			"kind_name": "Ni",
+			"ang_mtm_name": ["d"]
 		},
-		"projwfc_parameters": {
-		    "PROJWFC": {
-		        "DeltaE" : 0.2,
-		        "ngauss" : 1,
-		        "degauss" : 0.02
-		    }
-		}
+		{
+			"kind_name": "Ni1",
+			"ang_mtm_name": ["d"]
+		},
+		{
+			"kind_name": "O",
+			"ang_mtm_name": ["p"]
+		}]
+			
 	},
 	"steps": [{
 		"calcjob": "quantumespresso.pw",
 		"inputs": {
+			"parameters": {
+				"$ref": "#/data/pw_parameters"
+			},
+			"parameters.CONTROL.calculation": "scf",
 			"code": "pw-6.6@localhost",
+			"kpoints": [6,6,6],
+			"pseudos": {
+				"$ref": "#/data/pseudos"
+			},
 			"structure": {
 				"$ref": "#/data/structure"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		},
+		"postprocess": [{
+			"to_context": {
+				"name": "fermi",
+				"output": "output_parameters.fermi_energy_down"
+			}
+		}]
+	},
+	{
+		"calcjob": "quantumespresso.pw",
+		"inputs": {
+			"parameters": {
+				"$ref": "#/data/pw_parameters"
+			},
+			"parameters.CONTROL.calculation": "nscf",
+			"code": "pw-6.6@localhost",
+			"kpoints": {
+				"$ref": "#/data/kpoints_mesh"
 			},
 			"pseudos": {
 				"$ref": "#/data/pseudos"
 			},
-			"kpoints": [4, 4, 4],
-			"parameters": {
-				"$ref": "#/data/pw_parameters"
+			"structure": {
+				"$ref": "#/data/structure"
+			},
+			"parent_folder": {
+				"link": "remote_folder"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
 			}
 		},
-		"metadata": {
-			"$ref": "#/data/metadata"
-		}
+		"postprocess": [{
+			"to_context": {
+				"name": "nscf.dir",
+				"output": "remote_folder"
+			}},{
+			"to_context": {
+				"name": "nscf.outfile",
+				"attribute": "output_filename"
+			}},{
+			"to_context": {
+				"name": "nscf.infile",
+				"attribute": "input_filename"
+			}
+		}]
 	},
 	{
 		"calcjob": "quantumespresso.projwfc",
-		"inputs": {
+		"inputs":{
 			"code": "projwfc-6.6@localhost",
 			"parameters": {
-				"$ref": "#/data/projwfc_parameters"
+			    "PROJWFC": {
+			        "DeltaE" : 0.2,
+			        "ngauss" : 1,
+			        "degauss" : 0.02
+			    }
+			},
+			"parent_folder": {
+				"link": "remote_folder"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
 			}
 		},
-		"metadata": {
-			"$ref": "#/data/metadata"
+		"postprocess": [{
+			"to_context": {
+				"name": "projwfc.dir",
+				"output": "remote_folder"
+			}},{
+			"to_context": {
+				"name": "projwfc.outfile",
+				"attribute": "output_filename"
+			}
+		}]
+	},
+	{
+		"calcjob": "personal.generate_wannier_parameters",
+		"inputs": {
+			"nscf_dir": {
+				"from_context": "nscf.dir"
+			},
+			"nscf_infilename": {
+				"from_context": "nscf.infile",
+				"type": "core.str"
+			},
+			"nscf_outfilename": {
+				"from_context": "nscf.outfile",
+				"type": "core.str"
+			},
+			"projwfc_dir": {
+				"from_context": "projwfc.dir"
+			},
+			"projwfc_filename": {
+				"from_context": "projwfc.outfile",
+				"type": "core.str"
+			},
+			
+			"min_occupation": {
+				"type": "core.float",
+				"value": 0.2
+			},
+			"Epad": {
+				"type": "core.float",
+				"value": 5.0
+			},
+			"projections": {
+				"type": "core.list",
+				"value": {
+					"$ref": "#/data/projections"
+				}
+			}
 		},
-		"preprocess": "inputs['parent_folder'] = self.ctx.current.outputs['retrieved']"
-	}
-	]
+		"postprocess": [{
+			"to_context": {
+				"name": "w90params_up",
+				"output": "wan_params_up"
+			}},{
+			"to_context": {
+				"name": "w90params_down",
+				"output": "wan_params_down"
+			}},{
+			"to_context": {
+				"name": "pw2w90params_up",
+				"output": "pw2wan_params_up"
+			}},{
+			"to_context": {
+				"name": "pw2w90params_down",
+				"output": "pw2wan_params_down"
+			}}
+		]
+	},
+	{
+		"calcjob": "wannier90.wannier90",
+		"inputs": {
+			"code": "wannier90@localhost",
+			"kpoints": {
+				"$ref": "#/data/kpoints_mesh"
+			},
+			"structure": {
+				"$ref": "#/data/structure"
+			},
+			"settings": {
+				"postproc_setup": true
+			},
+			"projections": {
+				"type": "core.list",
+				"value": {
+					"$ref": "#/data/projections"
+				}
+			},
+			"parameters": {
+				"from_context": "w90params_up"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		}
+	},
+	{
+		"calcjob": "quantumespresso.pw2wannier90",
+		"inputs": {
+			"code": "pw2wannier90-6.6@localhost",
+			"settings": {
+				"additional_retrieve_list": ["*.amn", "*.mmn", "*.eig"]
+			},
+			"parameters": {
+				"from_context": "pw2w90params_up"
+			},
+			"parent_folder": {
+				"from_context": "nscf.dir"
+			},
+			"nnkp_file": {
+				"link": "nnkp_file"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		},
+		"postprocess": [{
+			"to_context": {
+				"name": "wan_up.dir",
+				"output": "remote_folder"
+			}}
+		]
+	},
+	{
+		"calcjob": "wannier90.wannier90",
+		"inputs": {
+			"code": "wannier90@localhost",
+			"kpoints": {
+				"$ref": "#/data/kpoints_mesh"
+			},
+			"structure": {
+				"$ref": "#/data/structure"
+			},
+			"projections": {
+				"type": "core.list",
+				"value": {
+					"$ref": "#/data/projections"
+				}
+			},
+			"settings": {
+				"additional_retrieve_list": ["*.chk"]
+			},
+			"parameters": {
+				"from_context": "w90params_up"
+			},
+			"remote_input_folder": {
+				"link": "remote_folder"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		}
+		
+	},{
+		"calcjob": "wannier90.wannier90",
+		"inputs": {
+			"code": "wannier90@localhost",
+			"kpoints": {
+				"$ref": "#/data/kpoints_mesh"
+			},
+			"structure": {
+				"$ref": "#/data/structure"
+			},
+			"settings": {
+				"postproc_setup": true
+			},
+			"projections": {
+				"type": "core.list",
+				"value": {
+					"$ref": "#/data/projections"
+				}
+			},
+			"parameters": {
+				"from_context": "w90params_down"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		}
+	},
+	{
+		"calcjob": "quantumespresso.pw2wannier90",
+		"inputs": {
+			"code": "pw2wannier90-6.6@localhost",
+			"settings": {
+				"additional_retrieve_list": ["*.amn", "*.mmn", "*.eig"]
+			},
+			"parameters": {
+				"from_context": "pw2w90params_down"
+			},
+			"parent_folder": {
+				"from_context": "nscf.dir"
+			},
+			"nnkp_file": {
+				"link": "nnkp_file"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		},
+		"postprocess": [{
+			"to_context": {
+				"name": "wan_down.dir",
+				"output": "remote_folder"
+			}}
+		]
+	},
+	{
+		"calcjob": "wannier90.wannier90",
+		"inputs": {
+			"code": "wannier90@localhost",
+			"kpoints": {
+				"$ref": "#/data/kpoints_mesh"
+			},
+			"structure": {
+				"$ref": "#/data/structure"
+			},
+			"projections": {
+				"type": "core.list",
+				"value": {
+					"$ref": "#/data/projections"
+				}
+			},
+			"settings": {
+				"additional_retrieve_list": ["*.chk"]
+			},
+			"parameters": {
+				"from_context": "w90params_down"
+			},
+			"remote_input_folder": {
+				"link": "remote_folder"
+			},
+			"metadata": {
+				"$ref": "#/data/metadata"
+			}
+		}
+	}]
 }
