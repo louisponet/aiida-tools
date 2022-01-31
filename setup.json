@@ -25,6 +25,7 @@
     "setup_requires": ["reentry"],
     "install_requires": [
         "aiida-core>=1.0.0",
-        "jsonschema"
+        "jsonschema",
+        "pyyaml"
     ]
 }

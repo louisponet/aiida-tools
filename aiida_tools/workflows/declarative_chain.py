@@ -9,6 +9,8 @@ import sys
 import plumpy
 from aiida_pseudo.data.pseudo.upf import UpfData
 import jsonref
+from os.path import splitext
+import yaml
 
 # from jinja2.nativetypes import NativeEnvironment
 
@@ -27,7 +29,6 @@ schema = {
         }
     },
     "required": ["steps"],
-    "additionalProperties": False,
     "definitions": {
         "Step": {
             "type": "object",
@@ -38,11 +39,8 @@ schema = {
                 "inputs": {
                     "type": "object"
                 },
-                "preprocess": {
-                    "type": "object"
-                },
                 "postprocess": {
-                    "type": "object"
+                    "type": "array"
                 },
                 "metadata": {
                     "type": "object"
@@ -245,8 +243,13 @@ class DeclarativeChain(WorkChain):
         self.ctx.current_id = 0
         self.ctx.results = dict()
 
+        ext = splitext(self.inputs['workchain_specification'].filename)[1]
         with self.inputs['workchain_specification'].open(mode="r") as f:
-            spec = jsonref.load(f, jsonschema=schema)
+            if ext == ".yaml":
+                spec = jsonref.JsonRef.replace_refs(yaml.load(f))
+                validate(instance=spec, schema=schema)
+            else:
+                spec = jsonref.load(f, jsonschema=schema)
 
         self.ctx.steps = spec['steps']
 
