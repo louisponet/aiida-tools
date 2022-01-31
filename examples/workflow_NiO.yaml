@@ -1,0 +1,222 @@
+---
+data:
+  "$ref": "file:///home/lponet/Software/pythondev/data.json"
+steps:
+- calcjob: quantumespresso.pw
+  inputs:
+    parameters:
+      "$ref": "#/data/pw_parameters"
+    parameters.CONTROL.calculation: scf
+    code: pw-6.6@localhost
+    kpoints:
+    - 6
+    - 6
+    - 6
+    pseudos:
+      "$ref": "#/data/pseudos"
+    structure:
+      "$ref": "#/data/structure"
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+  - to_context:
+      name: fermi
+      output: output_parameters.fermi_energy_down
+- calcjob: quantumespresso.pw
+  inputs:
+    parameters:
+      "$ref": "#/data/pw_parameters"
+    parameters.CONTROL.calculation: nscf
+    code: pw-6.6@localhost
+    kpoints:
+      "$ref": "#/data/kpoints_mesh"
+    pseudos:
+      "$ref": "#/data/pseudos"
+    structure:
+      "$ref": "#/data/structure"
+    parent_folder:
+      link: remote_folder
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+  - to_context:
+      name: nscf.dir
+      output: remote_folder
+  - to_context:
+      name: nscf.outfile
+      attribute: output_filename
+  - to_context:
+      name: nscf.infile
+      attribute: input_filename
+- calcjob: quantumespresso.projwfc
+  inputs:
+    code: projwfc-6.6@localhost
+    parameters:
+      PROJWFC:
+        DeltaE: 0.2
+        ngauss: 1
+        degauss: 0.02
+    parent_folder:
+      link: remote_folder
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+  - to_context:
+      name: projwfc.dir
+      output: remote_folder
+  - to_context:
+      name: projwfc.outfile
+      attribute: output_filename
+- calcjob: personal.generate_wannier_parameters
+  inputs:
+    nscf_dir:
+      from_context: nscf.dir
+    nscf_infilename:
+      from_context: nscf.infile
+      type: core.str
+    nscf_outfilename:
+      from_context: nscf.outfile
+      type: core.str
+    projwfc_dir:
+      from_context: projwfc.dir
+    projwfc_filename:
+      from_context: projwfc.outfile
+      type: core.str
+    min_occupation:
+      type: core.float
+      value: 0.2
+    Epad:
+      type: core.float
+      value: 5
+    projections:
+      type: core.list
+      value:
+        "$ref": "#/data/projections"
+  postprocess:
+  - to_context:
+      name: w90params_up
+      output: wan_params_up
+  - to_context:
+      name: w90params_down
+      output: wan_params_down
+  - to_context:
+      name: pw2w90params_up
+      output: pw2wan_params_up
+  - to_context:
+      name: pw2w90params_down
+      output: pw2wan_params_down
+- calcjob: wannier90.wannier90
+  inputs:
+    code: wannier90@localhost
+    kpoints:
+      "$ref": "#/data/kpoints_mesh"
+    structure:
+      "$ref": "#/data/structure"
+    settings:
+      postproc_setup: true
+    projections:
+      type: core.list
+      value:
+        "$ref": "#/data/projections"
+    parameters:
+      from_context: w90params_up
+    metadata:
+      "$ref": "#/data/metadata"
+- calcjob: quantumespresso.pw2wannier90
+  inputs:
+    code: pw2wannier90-6.6@localhost
+    settings:
+      additional_retrieve_list:
+      - "*.amn"
+      - "*.mmn"
+      - "*.eig"
+    parameters:
+      from_context: pw2w90params_up
+    parent_folder:
+      from_context: nscf.dir
+    nnkp_file:
+      link: nnkp_file
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+  - to_context:
+      name: wan_up.dir
+      output: remote_folder
+- calcjob: wannier90.wannier90
+  inputs:
+    code: wannier90@localhost
+    kpoints:
+      "$ref": "#/data/kpoints_mesh"
+    structure:
+      "$ref": "#/data/structure"
+    projections:
+      type: core.list
+      value:
+        "$ref": "#/data/projections"
+    settings:
+      additional_retrieve_list:
+      - "*.chk"
+    parameters:
+      from_context: w90params_up
+    remote_input_folder:
+      link: remote_folder
+    metadata:
+      "$ref": "#/data/metadata"
+- calcjob: wannier90.wannier90
+  inputs:
+    code: wannier90@localhost
+    kpoints:
+      "$ref": "#/data/kpoints_mesh"
+    structure:
+      "$ref": "#/data/structure"
+    settings:
+      postproc_setup: true
+    projections:
+      type: core.list
+      value:
+        "$ref": "#/data/projections"
+    parameters:
+      from_context: w90params_down
+    metadata:
+      "$ref": "#/data/metadata"
+- calcjob: quantumespresso.pw2wannier90
+  inputs:
+    code: pw2wannier90-6.6@localhost
+    settings:
+      additional_retrieve_list:
+      - "*.amn"
+      - "*.mmn"
+      - "*.eig"
+    parameters:
+      from_context: pw2w90params_down
+    parent_folder:
+      from_context: nscf.dir
+    nnkp_file:
+      link: nnkp_file
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+  - to_context:
+      name: wan_down.dir
+      output: remote_folder
+- calcjob: wannier90.wannier90
+  inputs:
+    code: wannier90@localhost
+    kpoints:
+      "$ref": "#/data/kpoints_mesh"
+    structure:
+      "$ref": "#/data/structure"
+    projections:
+      type: core.list
+      value:
+        "$ref": "#/data/projections"
+    settings:
+      additional_retrieve_list:
+      - "*.chk"
+    parameters:
+      from_context: w90params_down
+    remote_input_folder:
+      link: remote_folder
+    metadata:
+      "$ref": "#/data/metadata"
+
