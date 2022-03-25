@@ -36,6 +36,9 @@ schema = {
         "Step": {
             "type": "object",
             "properties": {
+                "if": {
+                    "type": "string"
+                },
                 "calcjob": {
                     "type": "string"
                 },
@@ -265,55 +268,54 @@ class DeclarativeChain(WorkChain):
     def not_finished(self):
         return self.ctx.current_id < len(self.ctx.steps)
 
-    def to_ctx(self, value, key):
-        self.ctx[key] = value
-        return value
-
     def submit_next(self):
 
         id = self.ctx.current_id
         step = self.ctx.steps[id]
-        if "node" in step:
-            self.ctx.current = load_node(step['node'])
+        if 'if' in step and not self.eval_template(step['if']):
+            self.ctx.current_id += 1
+            self.submit_next()
+        else:
+            if "node" in step:
+                self.ctx.current = load_node(step['node'])
 
-        elif "calcjob" in step:
-            # This needs to happen because no dict 2 node for now.
-            inputs = dict()
+            elif "calcjob" in step:
+                # This needs to happen because no dict 2 node for now.
+                inputs = dict()
 
-            cjob = CalculationFactory(step['calcjob'])
-            spec_inputs = cjob.spec().inputs
-            for k in step['inputs']:
-                valid_type = None
-                if k in spec_inputs:
-                    i = spec_inputs.get(k)
-                    valid_type = i.valid_type
-
-                d = step['inputs'][k]
-                if 'type' in d:
-                    valid_type = DataFactory(d.pop('type'))
-
-                if 'value' in d:
-                    val = d['value']
-                else:
-                    val = d
-
-                if isinstance(val, str):
-                    # t = self.env.
-                    val = self.env.from_string(val).render(ctx=self.ctx)
-
-                if valid_type is not None and not isinstance(val, valid_type):
-                    valid_type = valid_type[0] if isinstance(valid_type, tuple) else valid_type
+                cjob = CalculationFactory(step['calcjob'])
+                spec_inputs = cjob.spec().inputs
+                for k in step['inputs']:
+                    valid_type = None
                     if k in spec_inputs:
-                        val = dict2datanode(val, valid_type, isinstance(i, plumpy.PortNamespace))
+                        i = spec_inputs.get(k)
+                        valid_type = i.valid_type
+
+                    d = step['inputs'][k]
+                    if 'type' in d:
+                        valid_type = DataFactory(d.pop('type'))
+
+                    if 'value' in d:
+                        val = d['value']
                     else:
-                        val = dict2datanode(val, valid_type)
+                        val = d
 
-                set_dot2index(inputs, k, val)
+                    if isinstance(val, str):
+                        val = self.eval_template(val)
 
-            if is_process_function(cjob):
-                return ToContext(current = run_get_node(cjob, **inputs)[1])
-            else:
-                return ToContext(current=self.submit(cjob, **inputs))
+                    if valid_type is not None and not isinstance(val, valid_type):
+                        valid_type = valid_type[0] if isinstance(valid_type, tuple) else valid_type
+                        if k in spec_inputs:
+                            val = dict2datanode(val, valid_type, isinstance(i, plumpy.PortNamespace))
+                        else:
+                            val = dict2datanode(val, valid_type)
+
+                    set_dot2index(inputs, k, val)
+
+                if is_process_function(cjob):
+                    return ToContext(current = run_get_node(cjob, **inputs)[1])
+                else:
+                    return ToContext(current=self.submit(cjob, **inputs))
             
     def process_current(self):
         results = dict()
@@ -324,10 +326,22 @@ class DeclarativeChain(WorkChain):
         step = self.ctx.steps[self.ctx.current_id]
         if "postprocess" in step:
             for k in step["postprocess"]:
-                self.env.from_string(k).render(ctx=self.ctx)
+                self.eval_template(k)
 
         self.ctx.results[f'{self.ctx.current_id}'] = results
         self.ctx.current_id += 1
+        if 'test' in self.ctx:
+            print(self.ctx['test'])
+
+    # Jinja evaluation
+    def eval_template(self, s):
+        return self.env.from_string(s).render(ctx=self.ctx)
+
+    # Filters
+    def to_ctx(self, value, key):
+        self.ctx[key] = value
+        return value
+
 
     def finalize(self):
         self.out('results', self.ctx.results)
