@@ -1,4 +1,6 @@
 from aiida import orm
+from jinja2.nativetypes import NativeEnvironment
+from jinja2 import Environment
 from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float, List
 from aiida.engine import WorkChain, ToContext, while_, calcfunction, run_get_node
 from aiida.plugins import CalculationFactory, DataFactory
@@ -146,6 +148,7 @@ def dict2code(d):
 def dict2upf(d):
     validate(instance=d, schema=upfschema)
     group = load_group(d['group'])
+    # print(group)
     return group.get_pseudo(element=d['element'])
 
 
@@ -168,6 +171,7 @@ def dict2datanode(dat, typ, dynamic=False):
     if dynamic:
         out = dict()
         for k in dat:
+            # print(k)
             # Is there only 1 level of dynamisism?
             out[k] = dict2datanode(dat[k], typ, False)
         return out
@@ -184,12 +188,13 @@ def dict2datanode(dat, typ, dynamic=False):
             except:
                 None
 
+    # print(typ)
     # Else resolve DataNode from value
     if typ is orm.Code:
         return dict2code(dat)
     elif typ is orm.StructureData:
         return dict2structure(dat)
-    elif typ is UpfData:
+    elif typ is UpfData or typ is orm.nodes.data.upf.UpfData:
         return dict2upf(dat)
     elif typ is orm.KpointsData:
         return dict2kpoints(dat)
@@ -254,11 +259,18 @@ class DeclarativeChain(WorkChain):
         spec = jsonref.JsonRef.replace_refs(tspec, loader = JsonYamlLoader())
         validate(instance=spec, schema=schema)
         self.ctx.steps = spec['steps']
+        self.env = NativeEnvironment()
+        self.env.filters['to_ctx'] = self.to_ctx
 
     def not_finished(self):
         return self.ctx.current_id < len(self.ctx.steps)
 
+    def to_ctx(self, value, key):
+        self.ctx[key] = value
+        return value
+
     def submit_next(self):
+
         id = self.ctx.current_id
         step = self.ctx.steps[id]
         if "node" in step:
@@ -279,24 +291,18 @@ class DeclarativeChain(WorkChain):
                 d = step['inputs'][k]
                 if 'type' in d:
                     valid_type = DataFactory(d.pop('type'))
+
                 if 'value' in d:
                     val = d['value']
-                elif 'from_context' in d:
-                    val = get_dot2index(self.ctx, d['from_context'])
-                elif 'link' in d:
-                    link = d['link']
-                    if 'step' in link:
-                        val = get_dot2index(self.ctx.results[f"{link['step']}"], link['output'])
-                    else:
-                        val = get_dot2index(self.ctx.current.outputs, link)
-                # elif 'jinja' in d:
-                #     env = NativeEnvironment()
-                #     t = env.from_string(d['jinja'])
-
                 else:
                     val = d
 
+                if isinstance(val, str):
+                    # t = self.env.
+                    val = self.env.from_string(val).render(ctx=self.ctx)
+
                 if valid_type is not None and not isinstance(val, valid_type):
+                    valid_type = valid_type[0] if isinstance(valid_type, tuple) else valid_type
                     if k in spec_inputs:
                         val = dict2datanode(val, valid_type, isinstance(i, plumpy.PortNamespace))
                     else:
@@ -317,17 +323,8 @@ class DeclarativeChain(WorkChain):
 
         step = self.ctx.steps[self.ctx.current_id]
         if "postprocess" in step:
-            for work in step["postprocess"]:
-                if "to_context" in work:
-                    to_context = work["to_context"]
-                    if "value" in to_context:
-                        val = to_context["value"]
-                    elif "output" in to_context:
-                        val = get_dot2index(self.ctx.current.outputs, to_context["output"])
-                    elif "attribute" in to_context:
-                        val = get_dot2index(self.ctx.current.attributes, to_context["attribute"])
-
-                    set_dot2index(self.ctx, to_context["name"], val)
+            for k in step["postprocess"]:
+                self.env.from_string(k).render(ctx=self.ctx)
 
         self.ctx.results[f'{self.ctx.current_id}'] = results
         self.ctx.current_id += 1
