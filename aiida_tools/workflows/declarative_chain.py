@@ -39,6 +39,9 @@ schema = {
                 "if": {
                     "type": "string"
                 },
+                "while": {
+                    "type": "string"
+                },
                 "calcjob": {
                     "type": "string"
                 },
@@ -50,6 +53,9 @@ schema = {
                 },
                 "metadata": {
                     "type": "object"
+                },
+                "steps": {
+                    "type": "array"
                 },
                 "node": {
                     "type": "integer"
@@ -151,7 +157,6 @@ def dict2code(d):
 def dict2upf(d):
     validate(instance=d, schema=upfschema)
     group = load_group(d['group'])
-    # print(group)
     return group.get_pseudo(element=d['element'])
 
 
@@ -174,7 +179,6 @@ def dict2datanode(dat, typ, dynamic=False):
     if dynamic:
         out = dict()
         for k in dat:
-            # print(k)
             # Is there only 1 level of dynamisism?
             out[k] = dict2datanode(dat[k], typ, False)
         return out
@@ -191,7 +195,6 @@ def dict2datanode(dat, typ, dynamic=False):
             except:
                 None
 
-    # print(typ)
     # Else resolve DataNode from value
     if typ is orm.Code:
         return dict2code(dat)
@@ -265,6 +268,8 @@ class DeclarativeChain(WorkChain):
         self.env = NativeEnvironment()
         self.env.filters['to_ctx'] = self.to_ctx
 
+        self.ctx.in_while = False
+
     def not_finished(self):
         return self.ctx.current_id < len(self.ctx.steps)
 
@@ -274,7 +279,29 @@ class DeclarativeChain(WorkChain):
         step = self.ctx.steps[id]
         if 'if' in step and not self.eval_template(step['if']):
             self.ctx.current_id += 1
-            self.submit_next()
+            return self.submit_next()
+
+        elif "while" in step:
+            if self.eval_template(step['while']):
+                if not self.ctx.in_while:
+                    # Enter the while loop
+                    self.ctx.in_while = True
+                    self.ctx.while_first_id = len(self.ctx.steps)
+                    self.ctx.while_entry_id = id
+                    self.ctx.steps += step['steps']
+                    self.ctx.current_id = self.ctx.while_first_id
+                else:
+                    # Reroll the while loop
+                    self.ctx.current_id = self.ctx.while_first_id
+
+            elif self.ctx.in_while:
+                # Cleanup while loop
+                self.ctx.in_while = False
+                self.ctx.steps = self.ctx.steps[0:-len(step['steps'])]
+                self.ctx.current_id += 1
+
+            return self.submit_next()
+
         else:
             if "node" in step:
                 self.ctx.current = load_node(step['node'])
@@ -316,7 +343,8 @@ class DeclarativeChain(WorkChain):
                     return ToContext(current = run_get_node(cjob, **inputs)[1])
                 else:
                     return ToContext(current=self.submit(cjob, **inputs))
-            
+                    
+
     def process_current(self):
         results = dict()
         outputs = self.ctx.current.outputs
@@ -329,19 +357,20 @@ class DeclarativeChain(WorkChain):
                 self.eval_template(k)
 
         self.ctx.results[f'{self.ctx.current_id}'] = results
+
         self.ctx.current_id += 1
-        if 'test' in self.ctx:
-            print(self.ctx['test'])
+
+        if self.ctx.in_while and self.ctx.current_id == len(self.ctx.steps):
+            self.ctx.current_id = self.ctx.while_entry_id
 
     # Jinja evaluation
     def eval_template(self, s):
         return self.env.from_string(s).render(ctx=self.ctx)
 
-    # Filters
+    # Jinja Filters
     def to_ctx(self, value, key):
         self.ctx[key] = value
         return value
-
 
     def finalize(self):
         self.out('results', self.ctx.results)
