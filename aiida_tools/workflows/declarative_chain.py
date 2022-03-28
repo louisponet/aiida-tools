@@ -2,7 +2,7 @@ from aiida import orm
 from jinja2.nativetypes import NativeEnvironment
 from jinja2 import Environment
 from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float, List
-from aiida.engine import WorkChain, ToContext, while_, calcfunction, run_get_node
+from aiida.engine import WorkChain, ToContext, while_, calcfunction, run_get_node, ExitCode
 from aiida.plugins import CalculationFactory, DataFactory
 from aiida.engine.utils import is_process_function
 from jsonschema import validate
@@ -59,6 +59,9 @@ schema = {
                 },
                 "node": {
                     "type": "integer"
+                },
+                "error": {
+                    "type": "object"
                 }
             },
             "additionalProperties": False,
@@ -66,6 +69,23 @@ schema = {
         }
     }
 }
+
+ExitCode_schema = {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "title": "ExitCode",
+    "required": ["code"],
+    "properties": {
+        "code": {
+            "type": "integer"
+        },
+        "message": {
+            "type": "string"
+        }
+    },
+    "additionalProperties": False
+}
+
 
 structschema = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -240,6 +260,7 @@ class DeclarativeChain(WorkChain):
     def define(cls, spec):
         super().define(spec)
         spec.input('workchain_specification', valid_type=SinglefileData)
+        spec.exit_code(2, 'ERROR_SUBPROCESS', message='A subprocess has failed.') 
 
         spec.outline(
             cls.setup,
@@ -346,12 +367,14 @@ class DeclarativeChain(WorkChain):
                     
 
     def process_current(self):
-        results = dict()
-        outputs = self.ctx.current.outputs
-        for k in outputs:
-            results[k] = self.ctx.current.outputs[k]
-
         step = self.ctx.steps[self.ctx.current_id]
+        if not self.ctx.current.is_finished_ok:
+            self.report(f'A subprocess failed with exit status {self.ctx.current.exit_status}: {self.ctx.current.exit_message}')
+            if 'error' in step:
+                validate(step['error'], schema=ExitCode_schema)
+                return ExitCode(step['error']['code']) if 'message' not in step['error'] else ExitCode(step['error']['code'], message=step['error']['message'])
+
+        results = dict()
         if "postprocess" in step:
             for k in step["postprocess"]:
                 self.eval_template(k)
@@ -370,6 +393,10 @@ class DeclarativeChain(WorkChain):
     # Jinja Filters
     def to_ctx(self, value, key):
         self.ctx[key] = value
+        return value
+
+    def to_results(self, value, key):
+        self.ctx.results[key] = value
         return value
 
     def finalize(self):
