@@ -246,3 +246,7 @@ steps:
 ```
 ### Further examples
 For a fully featured example, see the `bands.yaml` file in the examples directory which mimics largely the `PwBandsWorkchain` from the [aiida-quantumespresso](https://github.com/aiidateam/aiida-quantumespresso) package.
+
+# Acknowledgements
+The `DeclarativeChain` was developed and design with help and input of Simon Adorf (@csadorf).
+
