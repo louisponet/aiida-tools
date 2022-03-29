@@ -1,0 +1,112 @@
+---
+data:
+  "$ref": "file:///home/lponet/Software/pythondev/data.yaml"
+steps:
+- calcjob: quantumespresso.pw
+  inputs:
+    parameters:
+      "$ref": "#/data/pw_parameters"
+    parameters.CONTROL.calculation: vc-relax
+    code: pw-occupations@localhost
+    kpoints:
+    - 6
+    - 6
+    - 6
+    pseudos:
+      "type": "core.upfdata"
+      "$ref": "#/data/pseudos"
+    structure:
+      "$ref": "#/data/structure"
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+      - "{{ ctx.current.outputs['output_structure']|to_ctx('current_structure') }}"
+      - "{{ ctx.current.outputs['output_parameters']['number_of_bands']|to_ctx('current_number_of_bands') }}"
+- calcjob: quantumespresso.pw
+  inputs:
+    parameters:
+      "$ref": "#/data/pw_parameters"
+    parameters.CONTROL.calculation: scf
+    parameters.SYSTEM.nbnd: "{{ ctx.current_number_of_bands }}"
+    code: pw-occupations@localhost
+    kpoints:
+    - 6
+    - 6
+    - 6
+    pseudos:
+      "$ref": "#/data/pseudos"
+    structure: "{{ ctx.current_structure }}"
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+    - "{{ ctx.current.outputs['output_parameters']['number_of_bands']|to_ctx('current_number_of_bands') }}"
+    - "{{ (2 if ctx.current.outputs['output_parameters']['number_of_spin_components] > 1 else 1)|to_ctx('nspin') }}"
+    - "{{ ctx.current.outputs['output_parameters']['number_of_electrons']|to_ctx('nelec') }}"
+    - "{{ ctx.current.outputs['output_parameters']|to_results('scf_parameters') }}"
+    - "{{ ctx.current.outputs['remote_folder']|to_results('scf_dir') }}"
+- calcjob: quantumespresso.seekpath_structure_analysis
+  inputs:
+      structure: "{{ ctx.current_structure }}"
+      reference_distance: 0.01
+  postprocess:
+      - "{{ ctx.current.outputs['primitive_structure'] | to_ctx('current_structure') }}"
+      - "{{ ctx.current.outputs['explicit_kpoints'] | to_ctx('bands_kpoints') }}"
+- calcjob: quantumespresso.pw
+  inputs:
+      parameters:
+        "$ref": "#/data/pw_parameters"
+      parameters.CONTROL.calculation: bands
+      parameters.ELECTRONS.diagonalization: cg
+      parameters.ELECTRONS.diago_full_acc: true
+      parameters.SYSTEM.nbnd: "{{ ctx.current_number_of_bands }}"
+      code: pw-occupations@localhost
+      kpoints: "{{ ctx.bands_kpoints }}"
+      pseudos:
+        "$ref": "#/data/pseudos"
+      structure: "{{ ctx.current_structure }}"
+      parent_folder: "{{ ctx.current.outputs['remote_folder'] }}"
+      metadata:
+        "$ref": "#/data/metadata"
+  postprocess:
+    - "{{ ctx.current.outputs['output_parameters']|to_results('band_parameters') }}"
+    - "{{ ctx.current.outputs['output_band']|to_results('band_structure') }}"
+    - "{{ 1 | to_ctx('count') }}"
+- while: "{{ ctx.count < 3 }}"
+  steps:
+    - calcjob: quantumespresso.pw
+      inputs:
+        parameters:
+          "$ref": "#/data/pw_parameters"
+        parameters.CONTROL.calculation: nscf
+        code: pw-occupations@localhost
+        kpoints:
+          "$ref": "#/data/kpoints_mesh"
+        pseudos:
+          "$ref": "#/data/pseudos"
+        structure:
+          "$ref": "#/data/structure"
+        parent_folder: "{{ ctx.scf_dir }}"
+        metadata:
+          "$ref": "#/data/metadata"
+      postprocess:
+        - "{{ ctx.current.outputs['remote_folder']|to_ctx('nscf_dir') }}"
+        - "{{ ctx.current.attributes['output_filename']|to_ctx('nscf_outfile') }}"
+        - "{{ ctx.current.attributes['input_filename']|to_ctx('nscf_infile') }}"
+        - "{{ (ctx.count + 1) | to_ctx('count')}}"
+- if: "{{ ctx.count > 3 }}"
+  calcjob: quantumespresso.projwfc
+  inputs:
+    code: projwfc-occupations@localhost
+    parameters:
+      PROJWFC:
+        DeltaE: 0.2
+        ngauss: 1
+        degauss: 0.02
+    parent_folder: "{{ ctx.nscf_dir }}"
+    metadata:
+      "$ref": "#/data/metadata"
+  postprocess:
+    - "{{ ctx.current.outputs['remote_folder']|to_ctx('projwfc_dir') }}"
+    - "{{ ctx.current.attributes['output_filename']|to_ctx('projwfc_outfile') }}"
+
+ 
