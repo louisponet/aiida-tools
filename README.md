@@ -212,7 +212,7 @@ steps:
     <inputs>
 ```
 Here, depending on the previously set `ctx` variable, the step will run.
-!!!! note
+#### note
     the corresponding else statement would be `"{{ not ctx.should_run }}"`
 
 ### While
@@ -229,7 +229,7 @@ steps:
       - "{{ (ctx.count + 1) | to_ctx('count') }}"
 ```
 will run the same calcjob 4 times
-!!!! note
+#### note
     Don't forget to set the ctx.count variable to something in the postprocessing step of the previous calcjob.
 
 ### Error
