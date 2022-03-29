@@ -177,11 +177,11 @@ steps:
 will paste the definition of `kpoints` in the `data` section into the input where it's referenced. This uses [jsonref](https://pypi.org/project/jsonref/), see its documentation for more possibilities. It is for example also possible to reference data from an external json/yaml file.
 
 ### Jinja templates
-Often, we want to use the workchain context (`self.ctx`) to store and retrieve intermediate results throughout the workchain's execution. To facilitate this we can use [jinja](https://jinja.palletsprojects.com/en/3.1.x/) templates such as:
+Often, we want to use the workchain context `self.ctx` to store and retrieve intermediate results throughout the workchain's execution. To facilitate this we can use [jinja](https://jinja.palletsprojects.com/en/3.1.x/) templates such as:
 `"{{ ctx.scf_dir }}"` to resolve certain values into the yaml script. The use of will become clear later.
 
 ### PostProcessing
-By defining a `postprocess` field, common operations can be performed that will run _after_ the execution of the main calcjob. For example
+By defining a `postprocess` field, common operations can be performed that will run _after_ the execution of the `current` calcjob. For example
 ```yaml
 ---
 data:
@@ -199,7 +199,7 @@ steps:
     parameters.CONTROL.calculation: nscf
     parent_folder: "{{ ctx.scf_dir }}"
 ```
-Here we can observe a couple of new constructs. The first is `ctx.current`, signifying the currently executed calcjob (i.e. the `scf` calculation). Secondly, the pipe and `to_ctx` in "{{ ctx.current.outputs['remote_folder'] | to_ctx('scf_dir') }}" mean the value is piped through a the `to_ctx` filter, which assigns it to the variable `scf_dir`, stored in the workchain's context `self.ctx` for later referencing. Indeed we see that in the next step we retrieve this value using `"{{ ctx.scf_dir }}"` as the `parent_folder` input. Finally we note the line `parameters.CONTROL.calculation: nscf`, this simply means that we set a particular value in the `parameters` dictionary.
+Here we can observe a couple of new constructs. The first is `ctx.current`, signifying the currently executed calcjob (i.e. the `scf` calculation). Secondly, the `|` and `to_ctx` in `"{{ ctx.current.outputs['remote_folder'] | to_ctx('scf_dir') }}"` mean the value is piped through a the `to_ctx` filter, which assigns it to the variable `scf_dir`, stored in the workchain's context `self.ctx` for later referencing. Indeed we see that in the next step we retrieve this value using `"{{ ctx.scf_dir }}"` as the `parent_folder` input. Finally we note the line `parameters.CONTROL.calculation: nscf`, this simply means that we set a particular value in the `parameters` dictionary.
 
 ### If
 Steps can define an `if` field which contains a statement. If the statement is true, the step will be executed, otherwise it is ignored.
@@ -212,7 +212,7 @@ steps:
     <inputs>
 ```
 Here, depending on the previously set `ctx` variable, the step will run.
-!!!note
+!!!! note
     the corresponding else statement would be `"{{ not ctx.should_run }}"`
 
 ### While
@@ -229,7 +229,7 @@ steps:
       - "{{ (ctx.count + 1) | to_ctx('count') }}"
 ```
 will run the same calcjob 4 times
-!!!note
+!!!! note
     Don't forget to set the ctx.count variable to something in the postprocessing step of the previous calcjob.
 
 ### Error
