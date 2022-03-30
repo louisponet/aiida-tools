@@ -291,6 +291,10 @@ class DeclarativeChain(WorkChain):
 
         self.ctx.in_while = False
 
+        if 'setup' in spec:
+            for k in spec['setup']:
+                self.eval_template(k)
+
     def not_finished(self):
         return self.ctx.current_id < len(self.ctx.steps)
 

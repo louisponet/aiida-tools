@@ -180,6 +180,16 @@ will paste the definition of `kpoints` in the `data` section into the input wher
 Often, we want to use the workchain context `self.ctx` to store and retrieve intermediate results throughout the workchain's execution. To facilitate this we can use [jinja](https://jinja.palletsprojects.com/en/3.1.x/) templates such as:
 `"{{ ctx.scf_dir }}"` to resolve certain values into the yaml script. The use of will become clear later.
 
+### Setup
+The top level `setup` statement allows for specifying some templates that will be executed before the main steps of the workchain.
+This allows for the definition of context variables, e.g.
+```yaml
+---
+setup:
+- "{{ 1 | to_ctx('count') }}"
+```
+sets the `self.ctx.count` variable to `1`.
+
 ### PostProcessing
 By defining a `postprocess` field, common operations can be performed that will run _after_ the execution of the `current` calcjob. For example
 ```yaml
@@ -230,7 +240,7 @@ steps:
 ```
 will run the same calcjob 4 times
 #### note
-    Don't forget to set the ctx.count variable to something in the postprocessing step of the previous calcjob.
+    Don't forget to set the ctx.count variable to something in the setup step of the workchain or the postprocessing step of the previous calcjob.
 
 ### Error
 It is possible that one of the steps errors. The error code and message will always be reported by the workchain. It is also possible to explicitely specify an error to return from the workchain if this happens using:

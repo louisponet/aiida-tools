@@ -1,6 +1,8 @@
 ---
 data:
   "$ref": "file://data.yaml"
+setup:
+- "{{ 1 | to_ctx('count') }}"
 steps:
 - calcjob: quantumespresso.pw
   inputs:
@@ -70,7 +72,6 @@ steps:
   postprocess:
     - "{{ ctx.current.outputs['output_parameters']|to_results('band_parameters') }}"
     - "{{ ctx.current.outputs['output_band']|to_results('band_structure') }}"
-    - "{{ 1 | to_ctx('count') }}"
 - while: "{{ ctx.count < 3 }}"
   steps:
     - calcjob: quantumespresso.pw
