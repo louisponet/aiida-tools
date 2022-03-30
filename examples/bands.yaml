@@ -1,6 +1,6 @@
 ---
 data:
-  "$ref": "file:///home/lponet/Software/pythondev/data.yaml"
+  "$ref": "file://data.yaml"
 steps:
 - calcjob: quantumespresso.pw
   inputs:
