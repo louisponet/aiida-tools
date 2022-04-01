@@ -288,6 +288,7 @@ class DeclarativeChain(WorkChain):
         self.ctx.steps = spec['steps']
         self.env = NativeEnvironment()
         self.env.filters['to_ctx'] = self.to_ctx
+        self.env.filters['to_results'] = self.to_results
 
         self.ctx.in_while = False
 
@@ -344,11 +345,14 @@ class DeclarativeChain(WorkChain):
                         valid_type = i.valid_type
 
                     d = step['inputs'][k]
-                    if 'type' in d:
-                        valid_type = DataFactory(d.pop('type'))
+                    if isinstance(d, dict):
+                        if 'type' in d:
+                            valid_type = DataFactory(d.pop('type'))
 
-                    if 'value' in d:
-                        val = d['value']
+                        if 'value' in d:
+                            val = d['value']
+                        else:
+                            val = d
                     else:
                         val = d
 
