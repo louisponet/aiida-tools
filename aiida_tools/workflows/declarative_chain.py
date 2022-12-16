@@ -3,7 +3,7 @@ from jinja2.nativetypes import NativeEnvironment
 from jinja2 import Environment
 from aiida.orm import Dict, SinglefileData, Str, load_node, load_code, load_group, Int, Float, List
 from aiida.engine import WorkChain, ToContext, while_, calcfunction, run_get_node, ExitCode
-from aiida.plugins import CalculationFactory, DataFactory
+from aiida.plugins import CalculationFactory, DataFactory, WorkflowFactory
 from aiida.engine.utils import is_process_function
 from jsonschema import validate
 import json
@@ -43,6 +43,12 @@ schema = {
                     "type": "string"
                 },
                 "calcjob": {
+                    "type": "string"
+                },
+                "calculation": {
+                    "type": "string"
+                },
+                "workflow": {
                     "type": "string"
                 },
                 "inputs": {
@@ -214,9 +220,8 @@ def dict2datanode(dat, typ, dynamic=False):
                 return dict2datanode(dat, t, dynamic)
             except:
                 None
-
     # Else resolve DataNode from value
-    if typ is orm.Code:
+    if typ is orm.AbstractCode:
         return dict2code(dat)
     elif typ is orm.StructureData:
         return dict2structure(dat)
@@ -332,11 +337,18 @@ class DeclarativeChain(WorkChain):
             if "node" in step:
                 self.ctx.current = load_node(step['node'])
 
-            elif "calcjob" in step:
+            elif "calcjob" in step or "workflow" in step or "calculation" in step:
                 # This needs to happen because no dict 2 node for now.
                 inputs = dict()
+                if "calcjob" in step:
+                    cjob = CalculationFactory(step['calcjob'])
+                elif "calculation" in step:
+                    cjob = WorkflowFactory(step['calculation'])
+                elif "workflow" in step:
+                    cjob = WorkflowFactory(step['workflow'])
+                else:
+                    ValueError(f"Unrecognized step {step}")
 
-                cjob = CalculationFactory(step['calcjob'])
                 spec_inputs = cjob.spec().inputs
                 for k in step['inputs']:
                     valid_type = None
