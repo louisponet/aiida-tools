@@ -379,7 +379,7 @@ class DeclarativeChain(WorkChain):
                             val = dict2datanode(val, valid_type)
 
                     set_dot2index(inputs, k, val)
-
+                # print(cjob)
                 if is_process_function(cjob):
                     return ToContext(current = run_get_node(cjob, **inputs)[1])
                 else:
