@@ -376,6 +376,8 @@ class DeclarativeChain(WorkChain):
                             val = dict2datanode(val, valid_type, isinstance(i, plumpy.PortNamespace))
                         else:
                             val = dict2datanode(val, valid_type)
+                    elif k != 'metadata' and not isinstance(val, orm.Data):
+                        val = orm.to_aiida_type(val)
 
                     set_dot2index(inputs, k, val)
                 # print(cjob)

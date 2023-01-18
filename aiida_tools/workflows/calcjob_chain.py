@@ -1,7 +1,6 @@
 from aiida.orm import Dict, SinglefileData, Str
 from aiida.engine import WorkChain, ToContext, while_, calcfunction, CalcJob
 from aiida.plugins import CalculationFactory
-import aiida_dynamic_workflows as flows
 
 class CalcJobChain(WorkChain):
 
