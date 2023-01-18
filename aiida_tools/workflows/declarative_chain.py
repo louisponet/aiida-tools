@@ -258,7 +258,6 @@ def set_dot2index(d, key, val):
 
         return set_dot2index(d[t], key[1:], val)
 
-
 class DeclarativeChain(WorkChain):
 
     @classmethod
@@ -394,12 +393,9 @@ class DeclarativeChain(WorkChain):
                 validate(step['error'], schema=ExitCode_schema)
                 return ExitCode(step['error']['code']) if 'message' not in step['error'] else ExitCode(step['error']['code'], message=step['error']['message'])
 
-        results = dict()
         if "postprocess" in step:
             for k in step["postprocess"]:
                 self.eval_template(k)
-
-        self.ctx.results[f'{self.ctx.current_id}'] = results
 
         self.ctx.current_id += 1
 
