@@ -9,20 +9,16 @@ import jsonref
 # licensed under the MIT license
 REQUESTS = cachecontrol.CacheControl(requests.Session())
 
-class JsonYamlLoader(jsonref.JsonLoader):
-
-    safe_yaml = YAML(typ="safe")
-
-    def __call__(self, uri, **kwargs):
-        uri_split = urlsplit(uri)
-        if Path(uri_split.path).suffix in (".yml", ".yaml"):
-            if uri_split.scheme == "file":
-                content = Path(uri_split.path).read_bytes()
-            else:
-                response = REQUESTS.get(uri)
-                response.raise_for_status()
-                content = response.content
-            return self.safe_yaml.load(content)
+def my_fancy_loader(uri):
+    uri_split = urlsplit(uri)
+    if Path(uri_split.path).suffix in (".yml", ".yaml"):
+        if uri_split.scheme == "file":
+            content = Path(uri_split.path).read_bytes()
         else:
-            return super().__call__(uri, **kwargs)
+            response = REQUESTS.get(uri)
+            response.raise_for_status()
+            content = response.content
+        return YAML(typ="safe").load(content)
+    else:
+        return jsonref.load_uri(uri, **kwargs)
 

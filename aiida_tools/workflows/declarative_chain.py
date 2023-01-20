@@ -13,7 +13,7 @@ from aiida_pseudo.data.pseudo.upf import UpfData
 import jsonref
 from os.path import splitext
 from ruamel.yaml import YAML
-from ..utils import JsonYamlLoader
+from ..utils import my_fancy_loader
 
 # from jinja2.nativetypes import NativeEnvironment
 
@@ -287,7 +287,7 @@ class DeclarativeChain(WorkChain):
             else:
                 spec = jsonref.load(f)
 
-        spec = jsonref.JsonRef.replace_refs(tspec, loader = JsonYamlLoader())
+        spec = jsonref.JsonRef.replace_refs(tspec, loader = my_fancy_loader)
         validate(instance=spec, schema=schema)
         self.ctx.steps = spec['steps']
         self.env = NativeEnvironment()
